@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+
+/* 全局排版优化 */
+body {
+  font-feature-settings: "kern" 1, "liga" 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* tabular-nums：让数字等宽，防止 CountUp 时布局跳动 */
+.font-tabular { font-variant-numeric: tabular-nums; }
+
+/* 大数字开启比例衬线数字 + 等宽，极细到极粗均美观 */
+.font-display-num {
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.04em;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #F5F6FA; }
+::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 2px; }
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.animate-spin-slow { animation: spin-slow 3s linear infinite; }
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+.animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+
+/* CountUp 数字入场：从下方轻微淡入 */
+@keyframes number-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-number-enter {
+  animation: number-enter 0.4s ease-out forwards;
+}
