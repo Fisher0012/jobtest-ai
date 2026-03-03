@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { BrainCircuit } from 'lucide-react'
+// eslint-disable-next-line @next/next/no-img-element
 
 // ── CountUp Hook ──────────────────────────────────────────
 function useCountUp(target: number, active: boolean, duration = 1800) {
@@ -342,9 +344,19 @@ export default function Home() {
       <header className="border-b border-black/8 px-6 py-4 sticky top-0 z-10 bg-white/90 backdrop-blur-sm shadow-sm">
         <div className="max-w-xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">⚡</span>
+            {/* AI 未来感美女头像 — DiceBear lorelei */}
+            <div className="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0 ring-1 ring-purple-200"
+              style={{ background: 'linear-gradient(135deg, #1a0533 0%, #2d1b69 100%)', boxShadow: '0 2px 10px rgba(139,92,246,0.3)' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://api.dicebear.com/9.x/lorelei/svg?seed=cyberqueen&backgroundColor=1a0533&backgroundType=solid&hairColor=7c3aed,6d28d9,a855f7"
+                alt="AI"
+                width={36}
+                height={36}
+              />
+            </div>
             <div>
-              <p className="font-bold text-sm leading-none text-[#111118]">AI 职业危机指数</p>
+              <p className="font-bold text-base leading-none text-[#111118]">AI 职业危机指数</p>
               <p className="text-[10px] text-[#9CA3AF] mt-0.5">Oxford · Goldman Sachs 模型</p>
             </div>
           </div>
