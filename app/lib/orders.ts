@@ -15,7 +15,10 @@ export interface Order {
 }
 
 // In-memory store — resets on server restart; swap for Redis/DB in production
-const ORDERS = new Map<string, Order>()
+// Attached to global to survive Next.js module isolation across API routes
+const g = global as typeof global & { __orders?: Map<string, Order> }
+if (!g.__orders) g.__orders = new Map<string, Order>()
+const ORDERS = g.__orders
 const TTL_MS = 30 * 60 * 1000  // 30 分钟
 
 function sweepExpired() {
