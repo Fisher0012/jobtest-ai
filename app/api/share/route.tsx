@@ -8,7 +8,7 @@ import QRCode from 'qrcode'
 // export const runtime = 'edge'  ← 已移除
 
 const W = 1080
-const H = 1440
+const H = 1920 // 9:16 手机竖屏比例
 
 // 字体缓存：首次请求时从本地磁盘加载，之后复用（无 Google Fonts 网络延迟）
 const FONT_PATH = path.join(process.cwd(), 'public', 'fonts', 'NotoSansSC-Bold.ttf')
@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
   const [fontData, qrDataUrl] = await Promise.all([
     getFont(),
     QRCode.toDataURL(shareUrl, {
-      width: 280,
+      width: 400, // 生成更高分辨率，显示时缩小到200px保证清晰度
       margin: 1,
       color: { dark: '#FFFFFF', light: '#0A0A0F' }, // 白色码点，背景色与图片一致
     }),
@@ -99,63 +99,66 @@ export async function GET(req: NextRequest) {
 
   return new ImageResponse(
     (
-      <div style={{ width: W, height: H, background: '#0A0A0F', display: 'flex', flexDirection: 'column', color: 'white', padding: '42px 72px', fontFamily: fontData ? 'Noto Sans SC' : 'sans-serif' }}>
+      <div style={{ width: W, height: H, background: '#0A0A0F', display: 'flex', flexDirection: 'column', color: 'white', padding: '60px 72px 80px', fontFamily: fontData ? 'Noto Sans SC' : 'sans-serif' }}>
 
         {/* 顶栏 */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: 28, fontWeight: 700 }}>AI 职业危机指数</span>
-            <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.3)', marginTop: 5 }}>Oxford · Goldman Sachs 模型</span>
+            <span style={{ fontSize: 36, fontWeight: 700 }}>AI 职业危机指数</span>
+            <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.3)', marginTop: 8 }}>Oxford · Goldman Sachs 模型</span>
           </div>
-          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.1)', padding: '5px 14px', borderRadius: 100 }}>2026</span>
+          <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 20px', borderRadius: 100 }}>2026</span>
         </div>
 
         {/* 岗位名称 */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20 }}>
-          <span style={{ fontSize: 36, fontWeight: 700, color: 'rgba(255,255,255,0.92)' }}>{jobLine}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 36 }}>
+          <span style={{ fontSize: 48, fontWeight: 700, color: 'rgba(255,255,255,0.92)', textAlign: 'center', lineHeight: '1.2' }}>{jobLine}</span>
         </div>
 
         {/* 大数字 */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 18 }}>
-          <span style={{ fontSize: 158, fontWeight: 900, color, lineHeight: '1' }}>{rateLine}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 48 }}>
+          <span style={{ fontSize: 200, fontWeight: 900, color, lineHeight: '0.9' }}>{rateLine}</span>
           {/* 进度条 */}
-          <div style={{ display: 'flex', width: 840, height: 12, background: 'rgba(255,255,255,0.1)', borderRadius: 6, overflow: 'hidden', marginTop: 12, marginBottom: 16 }}>
-            <div style={{ width: `${rate}%`, height: 12, background: color, borderRadius: 6 }} />
+          <div style={{ display: 'flex', width: '100%', maxWidth: 920, height: 16, background: 'rgba(255,255,255,0.1)', borderRadius: 8, overflow: 'hidden', marginTop: 20, marginBottom: 24 }}>
+            <div style={{ width: `${rate}%`, height: 16, background: color, borderRadius: 8 }} />
           </div>
           {/* 风险标签 */}
-          <div style={{ display: 'flex', padding: '10px 32px', borderRadius: 100, background: color + '22', border: `2px solid ${color}70`, fontSize: 28, fontWeight: 700, color }}>
+          <div style={{ display: 'flex', padding: '14px 48px', borderRadius: 100, background: color + '22', border: `3px solid ${color}70`, fontSize: 36, fontWeight: 700, color }}>
             {label}
           </div>
         </div>
 
         {/* 分隔线 */}
-        <div style={{ display: 'flex', width: '100%', height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 22 }} />
+        <div style={{ display: 'flex', width: '100%', height: 2, background: 'rgba(255,255,255,0.12)', marginBottom: 44 }} />
 
         {/* 四维分析 */}
-        <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 28 }}>
-          <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', marginBottom: 20 }}>四维分析</span>
+        <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 40 }}>
+          <span style={{ fontSize: 28, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', marginBottom: 28 }}>四维分析</span>
           {dims.map((d, i) => {
             const dc = dimColor(d.score, d.danger)
             return (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
-                <div style={{ display: 'flex', width: 10, height: 10, borderRadius: 5, background: dc, flexShrink: 0, marginRight: 14 }} />
-                <span style={{ fontSize: 26, width: 228, color: 'rgba(255,255,255,0.82)', flexShrink: 0, marginRight: 14 }}>{d.label}</span>
-                <div style={{ display: 'flex', flex: 1, height: 13, background: 'rgba(255,255,255,0.1)', borderRadius: 7, overflow: 'hidden', marginRight: 14 }}>
-                  <div style={{ display: 'flex', width: `${d.score}%`, height: 13, background: dc, borderRadius: 7 }} />
+              <div key={i} style={{ display: 'flex', alignItems: 'center', marginBottom: 28 }}>
+                <div style={{ display: 'flex', width: 14, height: 14, borderRadius: 7, background: dc, flexShrink: 0, marginRight: 20 }} />
+                <span style={{ fontSize: 32, width: 260, color: 'rgba(255,255,255,0.82)', flexShrink: 0, marginRight: 20 }}>{d.label}</span>
+                <div style={{ display: 'flex', flex: 1, height: 18, background: 'rgba(255,255,255,0.1)', borderRadius: 9, overflow: 'hidden', marginRight: 20 }}>
+                  <div style={{ display: 'flex', width: `${d.score}%`, height: 18, background: dc, borderRadius: 9 }} />
                 </div>
-                <span style={{ fontSize: 28, fontWeight: 700, width: 58, textAlign: 'right', color: dc, flexShrink: 0 }}>{String(d.score)}</span>
+                <span style={{ fontSize: 36, fontWeight: 700, width: 72, textAlign: 'right', color: dc, flexShrink: 0 }}>{String(d.score)}</span>
               </div>
             )
           })}
         </div>
 
+        {/* 动态间距 - 根据内容高度自动调整 */}
+        <div style={{ flex: 1, minHeight: 20 }} />
+
         {/* 高危任务 */}
         {risks.length > 0
           ? (
-            <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 20, padding: '22px 30px', background: 'rgba(255,68,68,0.07)', borderRadius: 16, border: '1px solid rgba(255,68,68,0.18)' }}>
-              <span style={{ fontSize: 22, color: 'rgba(255,110,110,0.9)', marginBottom: 12 }}>高危任务（最易被取代）</span>
+            <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 32, padding: '28px 36px', background: 'rgba(255,68,68,0.07)', borderRadius: 20, border: '1px solid rgba(255,68,68,0.18)', maxWidth: '100%', overflow: 'hidden' }}>
+              <span style={{ fontSize: 28, color: 'rgba(255,110,110,0.9)', marginBottom: 16, fontWeight: 600 }}>高危任务（最易被取代）</span>
               {risks.map((txt, i) => (
-                <span key={i} style={{ fontSize: 22, color: 'rgba(255,255,255,0.65)', marginTop: i > 0 ? 8 : 0 }}>{`- ${txt}`}</span>
+                <span key={i} style={{ fontSize: 26, color: 'rgba(255,255,255,0.65)', marginTop: i > 0 ? 12 : 0, wordBreak: 'break-word', lineHeight: '1.5' }}>{`- ${txt}`}</span>
               ))}
             </div>
           )
@@ -164,28 +167,28 @@ export async function GET(req: NextRequest) {
         {/* 职业护城河 */}
         {moats.length > 0
           ? (
-            <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 20, padding: '22px 30px', background: 'rgba(0,204,102,0.07)', borderRadius: 16, border: '1px solid rgba(0,204,102,0.18)' }}>
-              <span style={{ fontSize: 22, color: 'rgba(74,222,128,0.9)', marginBottom: 12 }}>职业护城河（AI 难以替代）</span>
+            <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 32, padding: '28px 36px', background: 'rgba(0,204,102,0.07)', borderRadius: 20, border: '1px solid rgba(0,204,102,0.18)', maxWidth: '100%', overflow: 'hidden' }}>
+              <span style={{ fontSize: 28, color: 'rgba(74,222,128,0.9)', marginBottom: 16, fontWeight: 600 }}>职业护城河（AI 难以替代）</span>
               {moats.map((txt, i) => (
-                <span key={i} style={{ fontSize: 22, color: 'rgba(255,255,255,0.65)', marginTop: i > 0 ? 8 : 0 }}>{`+ ${txt}`}</span>
+                <span key={i} style={{ fontSize: 26, color: 'rgba(255,255,255,0.65)', marginTop: i > 0 ? 12 : 0, wordBreak: 'break-word', lineHeight: '1.5' }}>{`+ ${txt}`}</span>
               ))}
             </div>
           )
           : null}
 
         {/* 页脚：左侧文字 + 右侧二维码 */}
-        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: 26, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingTop: 44, borderTop: '2px solid rgba(255,255,255,0.1)' }}>
           {/* 左：从众文案 + 引导文字 */}
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.32)', marginBottom: 12 }}>{socialProof}</span>
-            <span style={{ fontSize: 30, color: 'rgba(255,255,255,0.55)', marginBottom: 12 }}>{footerLine}</span>
-            <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.22)' }}>小红书搜索「AI 职业危机指数」来测一测</span>
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, marginRight: 48 }}>
+            <span style={{ fontSize: 22, color: 'rgba(255,255,255,0.32)', marginBottom: 16 }}>{socialProof}</span>
+            <span style={{ fontSize: 38, color: 'rgba(255,255,255,0.55)', marginBottom: 16, lineHeight: '1.3', fontWeight: 600 }}>{footerLine}</span>
+            <span style={{ fontSize: 24, color: 'rgba(255,255,255,0.22)' }}>小红书搜索「AI 职业危机指数」来测一测</span>
           </div>
           {/* 右：二维码 */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, flexShrink: 0 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qrDataUrl} width={140} height={140} style={{ borderRadius: 10 }} alt="" />
-            <span style={{ fontSize: 17, color: 'rgba(255,255,255,0.25)' }}>扫码测一测</span>
+            <img src={qrDataUrl} width={200} height={200} style={{ borderRadius: 14 }} alt="" />
+            <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.25)' }}>扫码测一测</span>
           </div>
         </div>
 

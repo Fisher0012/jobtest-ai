@@ -139,40 +139,11 @@ async function callDeepSeek(
 ): Promise<DeepReportData> {
   const { jobTitle, industry, yearsOfExperience, tasks, skills, replacement_rate, label, dimensions } = input
 
-  const prompt = `你是资深职业发展顾问，结合AI替代趋势，为以下用户生成深度转型报告。
-
-用户信息：
-- 岗位：${jobTitle}（${industry}，${yearsOfExperience}年经验）
-- AI替代概率：${replacement_rate}%（${label}）
-- 核心任务：${tasks.join('、')}
-- 硬技能：${skills.hard.join('、') || '未填写'}，软技能：${skills.soft.join('、') || '未填写'}
-- 重复性${dimensions.routine.score}分，社交情商${dimensions.social_eq.score}分，认知复杂度${dimensions.cognitive.score}分，AI覆盖率${dimensions.tech_trend.score}分
-
-请严格输出以下JSON（不要任何多余文字）：
-{
-  "situation": "对当前处境一针见血的诊断，30-50字，要有冲击力，指出核心问题",
-  "timeline": {
-    "year1": "1年内AI对该岗位的具体冲击，20-30字",
-    "year3": "3年内行业格局变化，20-30字",
-    "year5": "5年后该岗位生存状态，20-30字"
-  },
-  "pivots": [
-    {"role": "转型方向名称（8字以内）", "match": 匹配度整数, "reason": "为何推荐，15-20字", "skills": ["需补技能1", "需补技能2", "需补技能3"]},
-    {"role": "...", "match": ..., "reason": "...", "skills": [...]},
-    {"role": "...", "match": ..., "reason": "...", "skills": [...]}
-  ],
-  "action_plan": [
-    "第1步行动（含时间节点，15-25字）",
-    "第2步",
-    "第3步",
-    "第4步",
-    "第5步"
-  ],
-  "ai_tools": [
-    {"name": "工具名", "emoji": "emoji", "tagline": "一句话定位（6字以内）", "use_case": "针对该岗位的具体用法（20-30字）", "difficulty": "easy|medium|hard", "url": "官网URL", "tips": "上手技巧（20-25字）"},
-    ...（5-8个工具）
-  ]
-}`
+  const prompt = `职业顾问。为用户生成转型报告，严格输出JSON，不要多余文字。
+岗位:${jobTitle}(${industry},${yearsOfExperience}年) AI替代:${replacement_rate}%(${label})
+任务:${tasks.slice(0,3).join('、')} 技能:${[...skills.hard,...skills.soft].slice(0,4).join('、')||'无'}
+维度:重复${dimensions.routine.score}/社交${dimensions.social_eq.score}/认知${dimensions.cognitive.score}/AI覆盖${dimensions.tech_trend.score}
+{"situation":"处境诊断20字","timeline":{"year1":"1年冲击15字","year3":"3年变化15字","year5":"5年状态15字"},"pivots":[{"role":"方向8字","match":整数,"reason":"推荐原因15字","skills":["技能1","技能2","技能3"]},{"role":"...","match":0,"reason":"...","skills":[]},{"role":"...","match":0,"reason":"...","skills":[]}],"action_plan":["第1步15字","第2步","第3步","第4步","第5步"],"ai_tools":[{"name":"工具","emoji":"emoji","tagline":"定位6字","use_case":"用法20字","difficulty":"easy","url":"https://...","tips":"技巧20字"},{"name":"...","emoji":"...","tagline":"...","use_case":"...","difficulty":"easy","url":"...","tips":"..."},{"name":"...","emoji":"...","tagline":"...","use_case":"...","difficulty":"medium","url":"...","tips":"..."},{"name":"...","emoji":"...","tagline":"...","use_case":"...","difficulty":"medium","url":"...","tips":"..."},{"name":"...","emoji":"...","tagline":"...","use_case":"...","difficulty":"hard","url":"...","tips":"..."}]}`
 
   const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
     method: 'POST',
@@ -185,9 +156,9 @@ async function callDeepSeek(
       messages:        [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
       temperature:     0.4,
-      max_tokens:      2000,
+      max_tokens:      1000,
     }),
-    signal: AbortSignal.timeout(30000),
+    signal: AbortSignal.timeout(12000),
   })
 
   if (!res.ok) throw new Error(`DeepSeek error: ${res.status}`)
@@ -220,9 +191,17 @@ export async function POST(req: NextRequest) {
     }
 
     const apiKey = process.env.DEEPSEEK_API_KEY
-    const report = apiKey
-      ? await callDeepSeek(input)
-      : getMock(input.jobTitle, input.label)
+    let report: DeepReportData
+    if (apiKey) {
+      try {
+        report = await callDeepSeek(input)
+      } catch (e) {
+        console.error('[deep-report] DeepSeek failed, falling back to mock:', e)
+        report = getMock(input.jobTitle, input.label)
+      }
+    } else {
+      report = getMock(input.jobTitle, input.label)
+    }
 
     return NextResponse.json(report)
   } catch (err) {

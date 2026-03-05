@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 
@@ -14,10 +14,17 @@ export const metadata: Metadata = {
   description: '基于 Oxford / Goldman Sachs 研究模型，量化你的 AI 替代风险',
 }
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN" className={inter.variable}>
-      <body className="bg-[#F5F6FA] text-[#111118] antialiased">{children}</body>
+      <body className="bg-[#F5F6FA] text-[#111118] antialiased overflow-x-hidden">{children}</body>
     </html>
   )
 }

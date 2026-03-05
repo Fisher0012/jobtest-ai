@@ -156,8 +156,10 @@ export default function Home() {
   const [reportElapsed, setReportElapsed] = useState(0)
   const [payModal, setPayModal]           = useState<PayModal>('closed')
   const [orderId, setOrderId]             = useState<string | null>(null)
+  const [payError, setPayError]           = useState<string | null>(null)
   const [deepReportTab, setDeepReportTab] = useState<ReportTab>('timeline')
   const [expandedTool, setExpandedTool]   = useState<number | null>(null)
+  const [openid, setOpenid]               = useState<string | null>(null)
 
   const pollRef      = useRef<ReturnType<typeof setInterval> | null>(null)
   const suggestTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -181,6 +183,32 @@ export default function Home() {
   useEffect(() => {
     return () => { if (pollRef.current) clearInterval(pollRef.current) }
   }, [])
+
+  // 检测是否在微信环境
+  const isWechatBrowser = typeof window !== 'undefined' && /MicroMessenger/i.test(navigator.userAgent)
+
+  // 微信环境下获取 openid
+  useEffect(() => {
+    if (!isWechatBrowser) return
+
+    // 从 URL 获取 openid（回调后）
+    const urlParams = new URLSearchParams(window.location.search)
+    const callbackOpenid = urlParams.get('openid')
+
+    if (callbackOpenid) {
+      setOpenid(callbackOpenid)
+      // 清除 URL 中的 openid 参数
+      const cleanUrl = window.location.href.split('?')[0]
+      window.history.replaceState({}, '', cleanUrl)
+      return
+    }
+
+    // 没有 openid 则跳转授权
+    if (!openid) {
+      const redirect = window.location.pathname + window.location.search
+      window.location.href = `/api/wechat/auth?redirect=${encodeURIComponent(redirect)}`
+    }
+  }, [isWechatBrowser, openid])
 
   // 任务建议
   const triggerSuggest = useCallback(async (title: string) => {
@@ -238,7 +266,10 @@ export default function Home() {
       if (!reportRes.ok) throw new Error('生成失败')
       setDeepReport(await reportRes.json())
       setDeepReportTab('timeline')
-    } catch { /* 静默降级，保留按钮可重试 */ }
+    } catch (e) {
+      console.error('[fetchDeepReport]', e)
+      setError('报告生成失败，请点击"解锁深度转型报告"重试')
+    }
     finally { setReportLoading(false) }
   }, [result, industry, jobTitle, tasks, years, hardSkills, softSkills])
 
@@ -246,12 +277,13 @@ export default function Home() {
   const handlePayOrder = useCallback(async (provider: PayProvider) => {
     if (!result) return
     setPayModal('paying')
+    setPayError(null)
 
     try {
       const res = await fetch('/api/orders/create', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ provider, jobTitle }),
+        body:    JSON.stringify({ provider, jobTitle, openid }),
       })
       if (!res.ok) throw new Error('创建订单失败')
       const data = await res.json() as {
@@ -296,7 +328,9 @@ export default function Home() {
         } catch { /* ignore */ }
       }, 2000)
 
-    } catch {
+    } catch (err) {
+      console.error('[handlePayOrder] 支付失败:', err)
+      setPayError(err instanceof Error ? err.message : '支付失败，请重试')
       setPayModal('selecting')
     }
   }, [result, jobTitle, fetchDeepReport])
@@ -338,7 +372,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F5F6FA] font-sans">
+    <main className="min-h-screen bg-[#F5F6FA] font-sans overflow-x-hidden">
 
       {/* 顶栏 */}
       <header className="border-b border-black/8 px-6 py-4 sticky top-0 z-10 bg-white/90 backdrop-blur-sm shadow-sm">
@@ -993,6 +1027,15 @@ export default function Home() {
                   <span className="text-sm text-[#9CA3AF] line-through">¥29.9</span>
                   <span className="text-xs font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full ml-1">限时</span>
                 </div>
+
+                {/* 支付错误提示 */}
+                {payError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-700 font-medium">支付失败</p>
+                    <p className="text-xs text-red-600 mt-1">{payError}</p>
+                    <p className="text-xs text-red-500 mt-2">请检查网络或稍后重试</p>
+                  </div>
+                )}
 
                 <div className="space-y-2.5 mb-4">
                   <button

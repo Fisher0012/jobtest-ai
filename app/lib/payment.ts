@@ -7,6 +7,7 @@ import { markPaid } from './orders'
 export interface PayResult {
   mock:          boolean
   wechatH5Url?: string
+  wechatJSPrepayId?: string
   alipayUrl?:   string
 }
 
@@ -73,6 +74,53 @@ async function wechatH5Pay(order: Order): Promise<PayResult> {
   return { mock: false, wechatH5Url: h5_url }
 }
 
+// ── 微信支付 JSAPI（生产环境）─────────────────────────────
+async function wechatJSPay(order: Order, openid?: string): Promise<PayResult> {
+  const mchid    = process.env.WECHAT_MCHID!
+  const appid    = process.env.WECHAT_APPID!
+  const serialNo = process.env.WECHAT_SERIAL_NO!
+  const baseUrl  = process.env.NEXT_PUBLIC_BASE_URL!
+
+  // 私钥：优先从 private/wechat/apiclient_key.pem 读取
+  const privateKey = await loadPem('apiclient_key.pem', 'WECHAT_PRIVATE_KEY')
+
+  const apiPath = '/v3/pay/transactions/jsapi'
+  const nonce   = order.id.replace(/-/g, '').slice(0, 32)
+  const ts      = String(Math.floor(Date.now() / 1000))
+
+  if (!openid) {
+    throw new Error('JSAPI支付需要openid参数')
+  }
+
+  const payload = JSON.stringify({
+    appid,
+    mchid,
+    description: 'AI职业危机指数深度报告',
+    out_trade_no: order.id,
+    notify_url: `${baseUrl}/api/orders/callback?provider=wechat`,
+    amount: { total: order.amount, currency: 'CNY' },
+    payer: { openid },
+  })
+
+  // RSA-SHA256 签名，格式：METHOD\nURL\nTIMESTAMP\nNONCE\nBODY\n
+  const signMsg = `POST\n${apiPath}\n${ts}\n${nonce}\n${payload}\n`
+  const sig     = createSign('RSA-SHA256').update(signMsg).sign(privateKey, 'base64')
+  const auth    = `WECHATPAY2-SHA256-RSA2048 mchid="${mchid}",nonce_str="${nonce}",timestamp="${ts}",serial_no="${serialNo}",signature="${sig}"`
+
+  const res = await fetch(`https://api.mch.weixin.qq.com${apiPath}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: auth },
+    body: payload,
+  })
+  if (!res.ok) {
+    const errText = await res.text()
+    throw new Error(`WeChat Pay JSAPI error ${res.status}: ${errText}`)
+  }
+
+  const data = await res.json() as { prepay_id: string }
+  return { mock: false, wechatJSPrepayId: data.prepay_id }
+}
+
 // ── 支付宝 H5（生产环境）────────────────────────────────
 async function alipayH5(order: Order): Promise<PayResult> {
   const appId      = process.env.ALIPAY_APP_ID!
@@ -108,12 +156,18 @@ async function alipayH5(order: Order): Promise<PayResult> {
 }
 
 // ── 统一入口 ────────────────────────────────────────────
-export async function initiatePayment(order: Order): Promise<PayResult> {
+export async function initiatePayment(order: Order, openid?: string): Promise<PayResult> {
   const envProvider = process.env.PAYMENT_PROVIDER ?? 'mock'
   if (envProvider === 'mock' || order.provider === 'mock' || process.env.NODE_ENV !== 'production') {
     return mockPay(order)
   }
-  if (order.provider === 'wechat') return wechatH5Pay(order)
+  if (order.provider === 'wechat') {
+    if (openid) {
+      return wechatJSPay(order, openid)
+    } else {
+      return wechatH5Pay(order)
+    }
+  }
   if (order.provider === 'alipay') return alipayH5(order)
   return mockPay(order)
 }
