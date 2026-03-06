@@ -631,7 +631,7 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="max-w-xl mx-auto px-5 py-8 pb-24">
+      <div className="max-w-xl mx-auto px-5 py-8">
 
         {/* ══════════════ 表单页 ══════════════ */}
         {step === 'form' && (
@@ -1346,7 +1346,7 @@ export default function Home() {
       )}
 
       {/* ── Footer ── */}
-      <footer className="border-t border-black/8 bg-white mt-12 py-5 px-4">
+      <footer className="border-t border-black/8 bg-white mt-6 py-5 px-4">
         <div className="max-w-xl mx-auto flex flex-col items-center gap-3">
           <div className="flex items-center flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs text-[#9CA3AF]">
             <Link href="/sample" className="hover:text-[#374151] transition-colors">样本报告</Link>
