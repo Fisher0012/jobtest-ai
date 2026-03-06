@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import Link from 'next/link'
 import { BrainCircuit } from 'lucide-react'
 // eslint-disable-next-line @next/next/no-img-element
 
@@ -1343,6 +1344,24 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* ── Footer ── */}
+      <footer className="border-t border-black/8 bg-white mt-12 py-5 px-4">
+        <div className="max-w-xl mx-auto flex flex-col items-center gap-3">
+          <div className="flex items-center flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs text-[#9CA3AF]">
+            <Link href="/sample" className="hover:text-[#374151] transition-colors">样本报告</Link>
+            <span>·</span>
+            <Link href="/pricing" className="hover:text-[#374151] transition-colors">定价说明</Link>
+            <span>·</span>
+            <Link href="/about" className="hover:text-[#374151] transition-colors">关于我们</Link>
+            <span>·</span>
+            <Link href="/terms" className="hover:text-[#374151] transition-colors">服务条款</Link>
+            <span>·</span>
+            <Link href="/privacy" className="hover:text-[#374151] transition-colors">隐私政策</Link>
+          </div>
+          <p className="text-xs text-[#9CA3AF]">© 2025 AI 职业危机指数测评 · 基于 Oxford / Goldman Sachs 研究模型</p>
+        </div>
+      </footer>
 
     </main>
   )
