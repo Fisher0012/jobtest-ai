@@ -1194,180 +1194,66 @@ function getMock(jobTitle: string, label: string, domain: CareerDomain): DeepRep
   }
 }
 
-// ── DeepSeek 调用 ─────────────────────────────────────────
-async function callDeepSeek(
-  input: z.infer<typeof Schema>,
-): Promise<DeepReportData> {
+// ── DeepSeek 流式调用 ─────────────────────────────────────
+function buildPrompt(input: z.infer<typeof Schema>): string {
   const { jobTitle, industry, yearsOfExperience, tasks, skills, replacement_rate, label, dimensions } = input
+  return `你是职业AI冲击分析专家。根据以下信息生成JSON格式的深度转型报告，内容精准简洁。
 
-  // 检测职业领域
-  const domain = detectCareerDomain(jobTitle, industry)
+岗位：${jobTitle}（${industry}，${yearsOfExperience}年经验）
+任务：${tasks.slice(0, 3).join('、')}
+硬技能：${skills.hard.slice(0, 4).join('、') || '未填写'}
+软技能：${skills.soft.slice(0, 4).join('、') || '未填写'}
+AI替代率：${replacement_rate}%（${label}）
+四维评分：重复性${dimensions.routine.score}|社交情商${dimensions.social_eq.score}|认知复杂度${dimensions.cognitive.score}|AI覆盖${dimensions.tech_trend.score}
 
-  const prompt = `你是一名资深的职业发展顾问，拥有10年+的AI行业咨询经验，特别擅长${domain === 'medical' ? '医疗健康' : domain === 'education' ? '教育培训' : '职业发展'}领域。请为以下用户生成一份专业、深入、可执行的深度转型报告。
-
-## 用户信息
-- 岗位：${jobTitle}（${industry}行业）
-- 工作年限：${yearsOfExperience}年
-- 核心任务：${tasks.slice(0, 3).join('、')}
-- 硬技能：${skills.hard.slice(0, 4).join('、') || '未填写'}
-- 软技能：${skills.soft.slice(0, 4).join('、') || '未填写'}
-- 职业领域：${domain === 'medical' ? '医疗健康' : domain === 'education' ? '教育培训' : '职业发展'}
-
-## 风险评估
-- AI替代率：${replacement_rate}%（${label}）
-- 重复性任务：${dimensions.routine.score}/100（${dimensions.routine.reason}）
-- 社交情商：${dimensions.social_eq.score}/100（${dimensions.social_eq.reason}）
-- 认知复杂度：${dimensions.cognitive.score}/100（${dimensions.cognitive.reason}）
-- AI技术覆盖：${dimensions.tech_trend.score}/100（${dimensions.tech_trend.reason}）
-
-## 报告要求
-
-### 1. 处境诊断（200-300字）
-不要简单描述替代率，要深入分析：
-- 当前岗位的核心价值和风险点
-- AI对该岗位的具体冲击机制
-- 用户的技能优势和不足
-- 竞争环境的变化趋势
-- **特别关注该职业领域的具体变化趋势**
-
-### 2. 时间线分析
-针对1年、3年、5年三个时间点，分别分析：
-- 技术发展对该岗位的影响
-- 市场需求和人才结构变化
-- 可能的职业机会和挑战
-每个时间点80-120字，要有具体的数据或趋势支撑。
-
-### 3. 转型方向（3-5个）
-基于用户的技能、经验、行业趋势，推荐3-5个具体的转型方向：
-**重要：转型方向必须与用户的职业领域密切相关，避免推荐完全不相关的岗位！**
-
-每个转型方向包含：
-- role: 转型后的岗位名称（明确具体，必须与${jobTitle}所在的领域相关）
-- match: 匹配度（1-100的整数，基于用户技能的实际情况）
-- reason: 推荐理由（60-100字，充分说明为什么这个方向适合，要结合用户的经验背景）
-- skills: 需要/提升的核心技能（3-5个具体技能，要与${jobTitle}领域相关）
-- timeline: 预计转型时间（3个月/6个月/1年）
-- challenges: 主要挑战（2-3点，现实且具体）
-
-**转型方向示例参考（根据不同领域）：**
-- 医疗领域：医学影像AI专家、远程医疗运营、医疗数据分析师、医学AI产品经理
-- 教育领域：在线教育产品经理、教育科技专家、AI课程设计师、企业培训顾问
-- 建筑领域：智慧建筑项目经理、绿色建筑专家、建筑安全工程师、BIM建模师
-- 法律领域：法律科技产品经理、企业合规顾问、知识产权运营、法律AI应用开发
-- 技术领域：AI应用架构师、AI产品经理、AI训练师、数据科学家
-- 制造领域：智能制造工程师、质量管理体系负责人、供应链数字化专家
-- 零售领域：电商运营专家、数字营销专家、供应链优化师
-- 服务业：服务运营优化专家、客户体验经理、培训师
-- 其他领域：AI应用产品经理、数字化转型顾问、AI培训师
-
-### 4. 行动计划（5-8步）
-制定具体、可执行的行动计划，每步包含：
-- 时间节点（如"第1-2周"、"第1个月"）
-- 具体行动（可量化的目标）
-- 学习资源（课程、书籍、工具）
-- 成本估计（时间/金钱）
-- 成功指标（如何判断完成）
-
-### 5. AI工具推荐（5-8个）
-**重要：AI工具必须与用户的职业领域密切相关！**
-
-根据用户的具体任务和技能背景，推荐最适合的AI工具：
-每个工具包含：
-- name: 工具名称（明确具体，必须与${jobTitle}领域相关）
-- emoji: 相关emoji
-- tagline: 一句话定位（6-10字）
-- use_case: 具体使用场景（根据用户的任务定制，30-50字，必须说明在${jobTitle}工作中的具体应用）
-- difficulty: 难度评级（easy/medium/hard）
-- url: 官方链接
-- tips: 实用技巧（针对用户的具体情况，20-40字）
-- cost: 成本（免费/付费/订阅制）
-- learning_curve: 学习曲线（快速/中等/需要时间）
-
-**AI工具必须与用户职业领域相关，例如：**
-- 医生：医学影像AI、临床决策支持系统、医学文献检索、病历生成工具
-- 教师：教案生成AI、作业批改工具、个性化学习系统、家校沟通助手
-- 建筑工人：BIM建模AI、安全监控系统、材料需求预测、工期优化分析
-- 律师：法律文书AI、案例检索工具、合规风险扫描、庭审提词辅助
-- 程序员：GitHub Copilot、Cursor、Replit AI、Vercel AI SDK
-- 运营：电商文案AI、智能客服、销售话术AI
-
-## 输出要求
-严格输出以下JSON格式，不要任何多余文字：
+严格输出JSON，不要多余文字：
 {
-  "situation": "处境诊断200-300字",
+  "situation": "120-150字处境分析：核心风险点+AI冲击机制+技能优势",
   "timeline": {
-    "year1": "1年内分析80-120字",
-    "year3": "3年内分析80-120字",
-    "year5": "5年后分析80-120字"
+    "year1": "60-80字：1年内该岗位的具体变化",
+    "year3": "60-80字：3年内市场和人才结构变化",
+    "year5": "60-80字：5年后转型必要性判断"
   },
   "pivots": [
     {
-      "role": "转型岗位名称（必须与${jobTitle}领域相关）",
-      "match": 匹配度(1-100),
-      "reason": "推荐理由60-100字",
-      "skills": ["技能1", "技能2", "技能3", "技能4"],
-      "timeline": "预计转型时间",
-      "challenges": ["挑战1", "挑战2", "挑战3"]
+      "role": "与${jobTitle}强相关的转型岗位",
+      "match": 匹配度整数,
+      "reason": "50-70字推荐理由，结合用户背景",
+      "skills": ["技能1","技能2","技能3"],
+      "timeline": "X个月",
+      "challenges": ["挑战1","挑战2"]
     }
   ],
-  "action_plan": [
-    "第1步：具体行动和目标...",
-    "第2步：具体行动和目标..."
-  ],
+  "action_plan": ["第1步：时间节点+具体行动（30字内）","第2步","第3步","第4步"],
   "ai_tools": [
     {
-      "name": "工具名称（必须与${jobTitle}领域相关）",
+      "name": "与${jobTitle}工作直接相关的AI工具",
       "emoji": "emoji",
-      "tagline": "定位6-10字",
-      "use_case": "具体场景30-50字（必须说明在${jobTitle}工作中的具体应用）",
-      "difficulty": "easy",
+      "tagline": "6-8字定位",
+      "use_case": "20-30字，说明在${jobTitle}日常工作中怎么用",
+      "difficulty": "easy|medium|hard",
       "url": "https://...",
-      "tips": "实用技巧20-40字",
-      "cost": "免费/付费/订阅制",
-      "learning_curve": "快速/中等/需要时间"
+      "tips": "15-20字实用技巧",
+      "cost": "免费|付费|订阅制",
+      "learning_curve": "快速|中等|需要时间"
     }
   ]
 }
 
-注意事项：
-1. 内容要专业、客观、有建设性
-2. 避免夸大或过于乐观的描述
-3. 提供具体可执行的步骤
-4. 考虑用户可能的限制（时间、金钱、学习能力）
-5. **转型方向和AI工具必须与用户的职业领域高度相关，避免推荐完全不相关的岗位或工具**
-6. 引用具体的行业趋势或数据（如"根据麦肯锡2024年报告..."）`
+要求：pivots输出3个，ai_tools输出4个，action_plan输出4步，转型方向和工具必须与${jobTitle}所在行业强相关。`
+}
 
-  const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
-    method:  'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model:           'deepseek-chat',
-      messages:        [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
-      temperature:     0.4,
-      max_tokens:      2500,
-    }),
-    signal: AbortSignal.timeout(30000),
-  })
-
-  if (!res.ok) throw new Error(`DeepSeek error: ${res.status}`)
-
-  const data = await res.json()
-  const raw  = JSON.parse(data.choices[0].message.content)
-
+function parseRaw(raw: Record<string, unknown>): DeepReportData {
   return {
-    situation:   raw.situation   ?? '',
-    timeline:    raw.timeline    ?? { year1: '', year3: '', year5: '' },
-    pivots:      (raw.pivots     ?? []).slice(0, 5).map((p: Pivot) => ({
+    situation:   (raw.situation   as string) ?? '',
+    timeline:    (raw.timeline    as DeepReportData['timeline']) ?? { year1: '', year3: '', year5: '' },
+    pivots:      ((raw.pivots     as Pivot[]) ?? []).slice(0, 5).map((p: Pivot) => ({
       ...p,
       timeline: p.timeline ?? '6个月',
       challenges: p.challenges ?? [],
     })),
-    action_plan: (raw.action_plan ?? []).slice(0, 8),
-    ai_tools:    (raw.ai_tools   ?? []).slice(0, 8).map((t: AITool) => ({
+    action_plan: ((raw.action_plan as string[]) ?? []).slice(0, 8),
+    ai_tools:    ((raw.ai_tools   as AITool[]) ?? []).slice(0, 8).map((t: AITool) => ({
       ...t,
       cost: t.cost ?? '付费',
       learning_curve: t.learning_curve ?? '中等',
@@ -1375,46 +1261,116 @@ async function callDeepSeek(
   }
 }
 
+async function callDeepSeekStream(
+  input: z.infer<typeof Schema>,
+  onChunk: (delta: string) => void,
+): Promise<DeepReportData> {
+  const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    method:  'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model:           'deepseek-chat',
+      messages:        [{ role: 'user', content: buildPrompt(input) }],
+      response_format: { type: 'json_object' },
+      temperature:     0.3,
+      max_tokens:      1500,
+      stream:          true,
+    }),
+    signal: AbortSignal.timeout(25000),
+  })
+
+  if (!res.ok) throw new Error(`DeepSeek error: ${res.status}`)
+
+  const reader  = res.body!.getReader()
+  const decoder = new TextDecoder()
+  let buffer    = ''
+  let fullText  = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n')
+    buffer = lines.pop()!
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue
+      const payload = line.slice(6).trim()
+      if (payload === '[DONE]') break
+      try {
+        const chunk = JSON.parse(payload)
+        const delta = (chunk.choices?.[0]?.delta?.content ?? '') as string
+        if (delta) { fullText += delta; onChunk(delta) }
+      } catch { /* ignore malformed chunk */ }
+    }
+  }
+
+  const raw = JSON.parse(fullText)
+  return parseRaw(raw)
+}
+
 // ── Route Handler ─────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  let input: z.infer<typeof Schema>
   try {
-    const body  = await req.json()
-    const input = Schema.parse(body)
-
-    // 支付验证：仅在生产且 PAYMENT_PROVIDER !== 'mock' 时强制校验
-    const paymentEnabled = process.env.NODE_ENV === 'production' &&
-                           process.env.PAYMENT_PROVIDER !== 'mock'
-    if (paymentEnabled) {
-      const orderIdValid = input.orderId && isPaid(input.orderId)
-      const tokenValid = input.token && validateFreeLink(input.token).valid
-      if (!orderIdValid && !tokenValid) {
-        return NextResponse.json({ error: '请先完成支付或使用有效的免费链接' }, { status: 403 })
-      }
-    }
-
-    const apiKey = process.env.DEEPSEEK_API_KEY
-    let report: DeepReportData
-    if (apiKey) {
-      try {
-        // 检测职业领域
-        const domain = detectCareerDomain(input.jobTitle, input.industry)
-        report = await callDeepSeek(input)
-      } catch (e) {
-        console.error('[deep-report] DeepSeek failed, falling back to mock:', e)
-        const domain = detectCareerDomain(input.jobTitle, input.industry)
-        report = getMock(input.jobTitle, input.label, domain)
-      }
-    } else {
-      const domain = detectCareerDomain(input.jobTitle, input.industry)
-      report = getMock(input.jobTitle, input.label, domain)
-    }
-
-    return NextResponse.json(report)
+    const body = await req.json()
+    input = Schema.parse(body)
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: '输入格式错误', details: err.errors }, { status: 400 })
     }
-    console.error(err)
-    return NextResponse.json({ error: '报告生成失败，请稍后重试' }, { status: 500 })
+    return NextResponse.json({ error: '请求格式错误' }, { status: 400 })
   }
+
+  // 支付验证：仅在生产且 PAYMENT_PROVIDER !== 'mock' 时强制校验
+  const paymentEnabled = process.env.NODE_ENV === 'production' &&
+                         process.env.PAYMENT_PROVIDER !== 'mock'
+  if (paymentEnabled) {
+    const orderIdValid = input.orderId && isPaid(input.orderId)
+    const tokenValid   = input.token && validateFreeLink(input.token).valid
+    if (!orderIdValid && !tokenValid) {
+      return NextResponse.json({ error: '请先完成支付或使用有效的免费链接' }, { status: 403 })
+    }
+  }
+
+  const enc    = new TextEncoder()
+  const apiKey = process.env.DEEPSEEK_API_KEY
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (obj: object) =>
+        controller.enqueue(enc.encode(`data: ${JSON.stringify(obj)}\n\n`))
+
+      try {
+        if (apiKey) {
+          try {
+            const report = await callDeepSeekStream(input, delta => send({ type: 'chunk', text: delta }))
+            send({ type: 'done', report })
+          } catch (e) {
+            console.error('[deep-report] DeepSeek failed, falling back to mock:', e)
+            const domain = detectCareerDomain(input.jobTitle, input.industry)
+            send({ type: 'done', report: getMock(input.jobTitle, input.label, domain) })
+          }
+        } else {
+          const domain = detectCareerDomain(input.jobTitle, input.industry)
+          send({ type: 'done', report: getMock(input.jobTitle, input.label, domain) })
+        }
+      } catch (e) {
+        console.error('[deep-report]', e)
+        send({ type: 'error', message: '报告生成失败，请稍后重试' })
+      } finally {
+        controller.close()
+      }
+    },
+  })
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type':  'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection':    'keep-alive',
+    },
+  })
 }

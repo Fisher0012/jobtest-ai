@@ -83,17 +83,203 @@ const DIMENSIONS_META = {
 }
 
 const INDUSTRY_CHIPS = [
-  '互联网/科技', '金融/银行', '教育/培训', '医疗/健康',
-  '制造业', '零售/电商', '咨询/法律', '传媒/广告', '政府/公共部门',
+  '互联网/科技', '金融/银行/证券', '教育/培训', '医疗/健康',
+  '制造业', '零售/电商', '咨询/法律', '传媒/广告/公关', '政府/事业单位',
+  '建筑/房地产', '餐饮/食品', '物流/供应链', '文化/娱乐/游戏',
+  '旅游/酒店', '汽车/新能源', '农业/农林牧渔', '能源/化工',
 ]
 
-const HARD_SKILL_CHIPS = [
-  'Python', 'SQL', 'Excel', 'JavaScript', 'Java', 'Figma', 'Axure',
-  '数据分析', '机器学习', 'SAP', 'PRD写作', 'AIGC应用',
+// ── 职位→技能映射（最高分匹配：关键词越长越精确，分值越高）──
+const ROLE_SKILL_MAP: { keywords: string[]; hard: string[]; soft: string[] }[] = [
+  // 产品
+  {
+    keywords: ['产品经理', '产品总监', '产品负责人', '产品VP', 'PM', '产品策划'],
+    hard: ['Axure', 'Figma', 'PRD写作', 'SQL', 'AIGC应用', '用户研究'],
+    soft: ['项目管理', '沟通协调', '逻辑思维', '同理心', '跨部门协作'],
+  },
+  // 软件开发
+  {
+    keywords: ['程序员', '前端工程师', '后端工程师', '全栈工程师', '软件工程师',
+               '架构师', '前端开发', '后端开发', '软件开发', '移动开发',
+               'iOS开发', 'Android开发', '客户端工程师', '服务端工程师'],
+    hard: ['Python', 'JavaScript', 'Java', 'SQL', 'Git', 'AIGC应用'],
+    soft: ['解决问题', '逻辑思维', '自驱力', '抗压', '持续学习'],
+  },
+  // 运维 / DevOps
+  {
+    keywords: ['运维工程师', 'DevOps', '系统工程师', '网络工程师', '安全工程师', '云计算工程师'],
+    hard: ['Linux', 'Docker', 'Kubernetes', 'Python', 'AIGC应用'],
+    soft: ['细致严谨', '解决问题', '责任心', '抗压', '持续学习'],
+  },
+  // 测试 / QA
+  {
+    keywords: ['测试工程师', '质量工程师', 'QA工程师', '自动化测试', '性能测试'],
+    hard: ['Python', 'Selenium', 'SQL', 'JIRA', 'AIGC应用'],
+    soft: ['细致严谨', '逻辑思维', '沟通', '解决问题', '责任心'],
+  },
+  // 数据 / AI
+  {
+    keywords: ['数据分析师', '数据科学家', '数据工程师', '算法工程师',
+               '机器学习工程师', 'AI工程师', '数据挖掘工程师', '大数据工程师'],
+    hard: ['Python', 'SQL', '机器学习', 'Tableau', 'AIGC应用', 'Excel'],
+    soft: ['逻辑思维', '解决问题', '自驱力', '业务理解', '持续学习'],
+  },
+  // 内容 / 新媒体运营
+  {
+    keywords: ['内容运营', '新媒体运营', '社群运营', '用户运营', '活动运营', '内容策划'],
+    hard: ['Excel', 'AIGC应用', '数据分析', 'PPT', 'Photoshop'],
+    soft: ['创造力', '用户洞察', '文案写作', '执行力', '沟通'],
+  },
+  // 电商运营
+  {
+    keywords: ['电商运营', '增长运营', '直播运营', '店铺运营', '流量运营', '推广运营'],
+    hard: ['Excel', 'AIGC应用', '数据分析', '生意参谋', 'PPT'],
+    soft: ['数据敏感', '执行力', '用户洞察', '抗压', '沟通'],
+  },
+  // 销售 / 商务
+  {
+    keywords: ['销售经理', '销售总监', '大客户经理', '客户经理', '商务拓展',
+               'BD', '业务员', '销售代表', '销售顾问', '区域经理'],
+    hard: ['Excel', 'PPT', 'CRM系统', 'AIGC应用'],
+    soft: ['沟通谈判', '客户关系', '抗压', '目标导向', '演讲表达'],
+  },
+  // 财务 / 会计
+  {
+    keywords: ['财务经理', '财务总监', '财务分析师', '会计', '审计', '出纳',
+               '税务', '成本会计', '总账会计', 'CFO', '财务'],
+    hard: ['Excel', 'SAP', '财务软件', 'SQL', 'AIGC应用'],
+    soft: ['数字敏感', '严谨细致', '风险意识', '合规意识', '沟通'],
+  },
+  // UI / UX 设计
+  {
+    keywords: ['UI设计师', 'UX设计师', '交互设计师', '用户体验设计师', 'UI/UX', '产品设计师'],
+    hard: ['Figma', 'Photoshop', 'Sketch', 'AIGC应用', 'Midjourney'],
+    soft: ['用户思维', '创造力', '细节把控', '沟通', '审美洞察'],
+  },
+  // 平面 / 品牌设计
+  {
+    keywords: ['平面设计师', '品牌设计师', '视觉设计师', '美工', '插画师', '图形设计'],
+    hard: ['Photoshop', 'Illustrator', 'AIGC应用', 'Midjourney', 'Figma'],
+    soft: ['创造力', '审美洞察', '细节把控', '执行力', '沟通'],
+  },
+  // 视频 / 影视
+  {
+    keywords: ['视频剪辑', '剪辑师', '导演', '摄影师', '摄像师', '影视制作', '短视频'],
+    hard: ['PR/AE', 'Photoshop', 'AIGC应用', 'DaVinci', 'Final Cut'],
+    soft: ['创造力', '审美洞察', '细节把控', '执行力', '沟通'],
+  },
+  // 人力资源
+  {
+    keywords: ['人力资源', 'HR经理', 'HRBP', '招聘经理', '人事经理',
+               '薪酬福利', '组织发展', '培训发展', 'HR总监'],
+    hard: ['Excel', 'PPT', 'AIGC应用', 'HRIS系统'],
+    soft: ['沟通', '同理心', '组织协调', '判断力', '保密意识'],
+  },
+  // 市场 / 营销
+  {
+    keywords: ['市场经理', '市场总监', '品牌经理', '营销经理', '市场推广',
+               '广告投放', '市场策划', 'CMO', '增长黑客'],
+    hard: ['Excel', 'PPT', 'AIGC应用', 'Photoshop', '数据分析'],
+    soft: ['创造力', '用户洞察', '项目管理', '演讲表达', '沟通'],
+  },
+  // 文案 / 编辑
+  {
+    keywords: ['文案策划', '文案编辑', '内容编辑', '文字编辑', '撰稿人', '创意文案'],
+    hard: ['PPT', 'AIGC应用', 'Photoshop', 'Excel'],
+    soft: ['创造力', '文案写作', '逻辑思维', '用户洞察', '细节把控'],
+  },
+  // 教育 / 教师
+  {
+    keywords: ['教师', '老师', '讲师', '班主任', '培训师', '教育顾问', '学科教师'],
+    hard: ['PPT', 'AIGC应用', '课程设计', 'Excel'],
+    soft: ['沟通表达', '同理心', '耐心', '持续学习', '课堂管理'],
+  },
+  // 医疗
+  {
+    keywords: ['医生', '护士', '医师', '药师', '主治医师', '主任医师',
+               '外科医生', '内科医生', '全科医生', '医护人员'],
+    hard: ['医疗信息系统', 'AIGC应用', '临床技能', '医学文献检索'],
+    soft: ['同理心', '严谨细致', '沟通', '抗压', '责任心'],
+  },
+  // 法律
+  {
+    keywords: ['律师', '法务经理', '法务总监', '合规经理', '法律顾问',
+               '知识产权', '法官', '检察官'],
+    hard: ['法律文书', 'AIGC应用', '合同审查', '案例检索'],
+    soft: ['逻辑思维', '沟通谈判', '严谨细致', '抗压', '保密意识'],
+  },
+  // 项目管理
+  {
+    keywords: ['项目经理', '项目总监', 'PMP', 'PMO', '敏捷教练', 'Scrum Master'],
+    hard: ['Excel', 'PPT', 'AIGC应用', 'JIRA', 'MS Project'],
+    soft: ['项目管理', '沟通协调', '风险意识', '领导力', '抗压'],
+  },
+  // 客服
+  {
+    keywords: ['客服', '售后', '用户支持', '客户服务', '在线客服', '客服主管'],
+    hard: ['CRM系统', 'Excel', 'AIGC应用'],
+    soft: ['沟通', '同理心', '耐心', '抗压', '解决问题'],
+  },
+  // 行政 / 助理
+  {
+    keywords: ['行政专员', '行政助理', '秘书', '总裁助理', '总助', '前台'],
+    hard: ['Excel', 'PPT', 'AIGC应用', 'Office套件'],
+    soft: ['沟通协调', '细致执行', '保密意识', '时间管理', '应变能力'],
+  },
+  // 供应链 / 采购
+  {
+    keywords: ['供应链', '采购经理', '采购专员', '物流经理', '仓储管理',
+               '供应商管理', '进出口', '计划专员'],
+    hard: ['Excel', 'SAP', 'ERP系统', 'AIGC应用'],
+    soft: ['谈判', '风险意识', '沟通协调', '数据敏感', '解决问题'],
+  },
+  // 建筑 / 土木 / 机械工程
+  {
+    keywords: ['机械工程师', '土木工程师', '结构工程师', '建筑师', '暖通工程师',
+               '电气工程师', '施工员', '建筑设计师', '工程造价'],
+    hard: ['AutoCAD', 'BIM', 'Revit', 'AIGC应用', 'Excel'],
+    soft: ['严谨细致', '解决问题', '沟通协调', '项目管理', '责任心'],
+  },
+  // 咨询 / 顾问
+  {
+    keywords: ['咨询顾问', '管理咨询', '战略咨询', '业务顾问', '实施顾问'],
+    hard: ['Excel', 'PPT', 'AIGC应用', '数据分析', 'SQL'],
+    soft: ['逻辑思维', '沟通表达', '解决问题', '客户关系', '持续学习'],
+  },
+  // 金融 / 投资
+  {
+    keywords: ['基金经理', '投资经理', '证券分析师', '研究员', '投行', '风控经理', '信贷'],
+    hard: ['Excel', 'Python', 'SQL', 'AIGC应用', '数据分析'],
+    soft: ['逻辑思维', '风险意识', '数字敏感', '抗压', '持续学习'],
+  },
 ]
-const SOFT_SKILL_CHIPS = [
-  '沟通', '项目管理', '领导力', '解决问题', '同理心', '抗压', '创造力', '演讲表达',
-]
+
+const DEFAULT_HARD_CHIPS = ['Excel', 'PPT', 'AIGC应用', 'SQL', 'Python', 'Figma', '数据分析']
+const DEFAULT_SOFT_CHIPS = ['沟通', '项目管理', '解决问题', '同理心', '抗压', '创造力', '领导力']
+
+// 关键词长度平方加权 → 越精确的关键词得分越高，取最高分条目
+function getSkillsForRole(title: string): { hard: string[]; soft: string[] } {
+  const lower = title.trim().toLowerCase()
+  if (!lower) return { hard: DEFAULT_HARD_CHIPS, soft: DEFAULT_SOFT_CHIPS }
+
+  let best: { hard: string[]; soft: string[] } | null = null
+  let bestScore = 0
+
+  for (const entry of ROLE_SKILL_MAP) {
+    let score = 0
+    for (const kw of entry.keywords) {
+      if (lower.includes(kw.toLowerCase())) {
+        score += kw.length * kw.length
+      }
+    }
+    if (score > bestScore) {
+      bestScore = score
+      best = { hard: entry.hard, soft: entry.soft }
+    }
+  }
+
+  return best ?? { hard: DEFAULT_HARD_CHIPS, soft: DEFAULT_SOFT_CHIPS }
+}
 
 const SCAN_MESSAGES = [
   '扫描职业特征数据…',
@@ -146,14 +332,19 @@ export default function Home() {
   const [hardSkills, setHardSkills] = useState('')
   const [softSkills, setSoftSkills] = useState('')
   const [taskSuggesting, setTaskSuggesting] = useState(false)
+  const [suggestedSkills, setSuggestedSkills] = useState<{ hard: string[]; soft: string[] }>({
+    hard: DEFAULT_HARD_CHIPS,
+    soft: DEFAULT_SOFT_CHIPS,
+  })
 
   // Scan animation
   const [scanIdx, setScanIdx] = useState(0)
 
   // Report + payment state
-  const [reportLoading, setReportLoading] = useState(false)
-  const [deepReport, setDeepReport]       = useState<DeepReport | null>(null)
-  const [reportElapsed, setReportElapsed] = useState(0)
+  const [reportLoading, setReportLoading]   = useState(false)
+  const [streamingText, setStreamingText]   = useState('')
+  const [deepReport, setDeepReport]         = useState<DeepReport | null>(null)
+  const [reportElapsed, setReportElapsed]   = useState(0)
   const [payModal, setPayModal]           = useState<PayModal>('closed')
   const [orderId, setOrderId]             = useState<string | null>(null)
   const [payError, setPayError]           = useState<string | null>(null)
@@ -240,11 +431,17 @@ export default function Home() {
     return () => { if (suggestTimer.current) clearTimeout(suggestTimer.current) }
   }, [jobTitle, triggerSuggest])
 
+  // 职位→技能标签联动（即时，无需 API）
+  useEffect(() => {
+    setSuggestedSkills(getSkillsForRole(jobTitle))
+  }, [jobTitle])
+
   // 获取深度报告（mock成功、调试按钮、真实支付轮询成功，均走此函数）
   const fetchDeepReport = useCallback(async (oid: string) => {
     if (!result) return
     setPayModal('closed')
     setReportLoading(true)
+    setStreamingText('')
     try {
       const reportRes = await fetch('/api/deep-report', {
         method:  'POST',
@@ -264,13 +461,41 @@ export default function Home() {
         }),
       })
       if (!reportRes.ok) throw new Error('生成失败')
-      setDeepReport(await reportRes.json())
-      setDeepReportTab('timeline')
+
+      const reader  = reportRes.body!.getReader()
+      const decoder = new TextDecoder()
+      let buf = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buf += decoder.decode(value, { stream: true })
+        const lines = buf.split('\n')
+        buf = lines.pop()!
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          const payload = line.slice(6).trim()
+          try {
+            const evt = JSON.parse(payload)
+            if (evt.type === 'chunk') {
+              setStreamingText(t => t + evt.text)
+            } else if (evt.type === 'done') {
+              setDeepReport(evt.report)
+              setStreamingText('')
+              setDeepReportTab('timeline')
+            } else if (evt.type === 'error') {
+              throw new Error(evt.message)
+            }
+          } catch { /* ignore malformed event */ }
+        }
+      }
     } catch (e) {
       console.error('[fetchDeepReport]', e)
+      setStreamingText('')
       setError('报告生成失败，请点击"解锁深度转型报告"重试')
+    } finally {
+      setReportLoading(false)
     }
-    finally { setReportLoading(false) }
   }, [result, industry, jobTitle, tasks, years, hardSkills, softSkills])
 
   // 支付并获取深度报告
@@ -283,7 +508,7 @@ export default function Home() {
       const res = await fetch('/api/orders/create', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ provider, jobTitle, openid }),
+        body:    JSON.stringify({ provider, jobTitle, ...(openid ? { openid } : {}) }),
       })
       if (!res.ok) throw new Error('创建订单失败')
       const data = await res.json() as {
@@ -524,7 +749,7 @@ export default function Home() {
                   className="w-full mt-1 bg-[#F9FAFB] border border-black/10 rounded-lg px-3 py-2.5 text-sm text-[#111118] placeholder-black/25 focus:outline-none focus:border-black/30 transition-colors"
                 />
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {HARD_SKILL_CHIPS.map(chip => {
+                  {suggestedSkills.hard.map(chip => {
                     const active = hardSkills.split(/[,，]/).map(s => s.trim().toLowerCase()).includes(chip.toLowerCase())
                     return (
                       <button
@@ -548,7 +773,7 @@ export default function Home() {
                   className="w-full mt-1 bg-[#F9FAFB] border border-black/10 rounded-lg px-3 py-2.5 text-sm text-[#111118] placeholder-black/25 focus:outline-none focus:border-black/30 transition-colors"
                 />
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {SOFT_SKILL_CHIPS.map(chip => {
+                  {suggestedSkills.soft.map(chip => {
                     const active = softSkills.split(/[,，]/).map(s => s.trim().toLowerCase()).includes(chip.toLowerCase())
                     return (
                       <button
@@ -786,10 +1011,19 @@ export default function Home() {
 
             {/* 报告加载中 */}
             {reportLoading && (
-              <div className="rounded-2xl bg-white border border-black/8 p-8 flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-2 border-black/10 border-t-[#111118] rounded-full animate-spin" />
-                <p className="text-sm text-[#374151] font-medium">AI 正在生成报告… {reportElapsed}s</p>
-                <p className="text-xs text-[#9CA3AF]">预计 10–15 秒</p>
+              <div className="rounded-2xl bg-white border border-black/8 p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-4 h-4 border-2 border-black/10 border-t-[#111118] rounded-full animate-spin flex-shrink-0" />
+                  <p className="text-sm text-[#374151] font-medium">AI 正在生成报告… {reportElapsed}s</p>
+                </div>
+                {streamingText ? (
+                  <div className="bg-[#F9FAFB] rounded-xl p-4 text-sm text-[#374151] leading-relaxed font-mono whitespace-pre-wrap break-all max-h-48 overflow-y-auto">
+                    {streamingText}
+                    <span className="inline-block w-0.5 h-4 bg-[#111118] animate-pulse ml-0.5 align-middle" />
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#9CA3AF]">正在连接 AI 模型…</p>
+                )}
               </div>
             )}
 
