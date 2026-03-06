@@ -5,10 +5,17 @@ import type { Order } from './orders'
 import { markPaid } from './orders'
 
 export interface PayResult {
-  mock:          boolean
-  wechatH5Url?: string
-  wechatJSPrepayId?: string
-  alipayUrl?:   string
+  mock:             boolean
+  wechatH5Url?:    string
+  wechatJSParams?: {
+    appId:     string
+    timeStamp: string
+    nonceStr:  string
+    package:   string
+    signType:  string
+    paySign:   string
+  }
+  alipayUrl?:      string
 }
 
 // ── Mock：立即标记已付款，客户端负责延迟动画（避免 HMR 重置丢单）──
@@ -117,8 +124,24 @@ async function wechatJSPay(order: Order, openid?: string): Promise<PayResult> {
     throw new Error(`WeChat Pay JSAPI error ${res.status}: ${errText}`)
   }
 
-  const data = await res.json() as { prepay_id: string }
-  return { mock: false, wechatJSPrepayId: data.prepay_id }
+  const { prepay_id } = await res.json() as { prepay_id: string }
+
+  // 计算 paySign：appId\ntimeStamp\nnonceStr\npackage\n
+  const packageStr = `prepay_id=${prepay_id}`
+  const paySignMsg = `${appid}\n${ts}\n${nonce}\n${packageStr}\n`
+  const paySign    = createSign('RSA-SHA256').update(paySignMsg).sign(privateKey, 'base64')
+
+  return {
+    mock: false,
+    wechatJSParams: {
+      appId:     appid,
+      timeStamp: ts,
+      nonceStr:  nonce,
+      package:   packageStr,
+      signType:  'RSA',
+      paySign,
+    },
+  }
 }
 
 // ── 支付宝 H5（生产环境）────────────────────────────────

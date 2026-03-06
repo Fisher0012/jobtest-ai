@@ -3,6 +3,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { BrainCircuit } from 'lucide-react'
+
+declare const WeixinJSBridge: {
+  invoke: (api: string, params: object, cb: (res: { err_msg: string }) => void) => void
+}
 // eslint-disable-next-line @next/next/no-img-element
 
 // ── CountUp Hook ──────────────────────────────────────────
@@ -513,10 +517,36 @@ export default function Home() {
       })
       if (!res.ok) throw new Error('创建订单失败')
       const data = await res.json() as {
-        orderId: string; mock: boolean; wechatH5Url?: string; alipayUrl?: string
+        orderId: string; mock: boolean
+        wechatH5Url?:   string
+        wechatJSParams?: { appId: string; timeStamp: string; nonceStr: string; package: string; signType: string; paySign: string }
+        alipayUrl?:     string
       }
 
       setOrderId(data.orderId)
+
+      // JSAPI 支付（微信内浏览器）
+      if (data.wechatJSParams) {
+        const invokeJSPay = () => {
+          WeixinJSBridge.invoke('getBrandWCPayRequest', data.wechatJSParams!, (res) => {
+            if (res.err_msg === 'get_brand_wcpay_request:ok') {
+              setPayModal('success')
+              setTimeout(() => fetchDeepReport(data.orderId), 1200)
+            } else if (res.err_msg === 'get_brand_wcpay_request:cancel') {
+              setPayModal('selecting')
+            } else {
+              setPayError('支付失败，请重试')
+              setPayModal('selecting')
+            }
+          })
+        }
+        if (typeof WeixinJSBridge === 'undefined') {
+          document.addEventListener('WeixinJSBridgeReady', invokeJSPay, false)
+        } else {
+          invokeJSPay()
+        }
+        return
+      }
 
       if (data.wechatH5Url) window.open(data.wechatH5Url, '_blank')
       if (data.alipayUrl)   window.open(data.alipayUrl, '_blank')
@@ -559,7 +589,7 @@ export default function Home() {
       setPayError(err instanceof Error ? err.message : '支付失败，请重试')
       setPayModal('selecting')
     }
-  }, [result, jobTitle, fetchDeepReport])
+  }, [result, jobTitle, openid, fetchDeepReport])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
